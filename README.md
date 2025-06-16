@@ -41,7 +41,7 @@ Newsly/
 
 ### 1. Clone the repo:
 ```bash
-git clone https://github.com/your-username/newsly.git
+git clone https://github.com/Ravishanker-sharma/Newsly
 cd newsly
 ```
 ```
