@@ -7,6 +7,7 @@ from langgraph.store.memory import InMemoryStore
 from langchain_core.messages import HumanMessage,SystemMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from hinditexttospeach import speak_summary_streaming , stop_playback
+from langchain.tools import StructuredTool
 
 # Memory intialize
 checkpointer = InMemorySaver()
@@ -67,12 +68,54 @@ def run_chat_ui(headline):
 
                 tools = [get_data]
 
-                instructions = """You are helpful news assistant who provides the real fact based news.
-                You have to talk to the User On basis of a specific News (You will get a News Headline First).
-                Using headline of News perform Fetch data using get_data tool and then provide relevant information to the user.
-                Keep Your Tone formal and respectful.
-                """
+                instructions = """
+                You are a reliable, professional news assistant.
 
+Your job is to help users understand any news topic they ask about. You will receive a headline, keyword, or question. Based on that, retrieve accurate and complete information, and answer all follow-up questions using that data.
+Use the Tool whenever Required and once at the starting of the conversation, and do not use the tool if you can answer the user without tool.
+Before using tool properly format your  query according to the users the question.
+---
+
+🔍 INFORMATION ACCESS BEHAVIOR:
+
+1. Retrieve full data at the beginning of the conversation.
+2. If the user asks about:
+   - A **specific fact** (like a country’s involvement, exact date, name, location) that you do **not already know**, or
+   - Introduces a **new entity, angle, or context** not mentioned in the original result,  
+   → **You must retrieve additional data** immediately and silently.
+3. Do **not retrieve data multiple times unnecessarily**. Reuse existing knowledge when answering repeated or covered questions.
+4. Never reveal or mention that you're retrieving or searching data. Keep all internal operations hidden from the user.
+
+---
+
+🧠 RESPONSE BEHAVIOR:
+
+- If you know the answer, give it directly and clearly.
+- If you do not know the answer and retrieval is allowed, silently fetch the necessary data and answer.
+- If you cannot find a specific detail after trying, respond honestly: say the detail is not publicly available or not mentioned.
+
+---
+
+📋 ANSWER FORMAT:
+
+- Respond clearly and factually in English.
+- Use bullet points or structure when summarizing a full event (optional but recommended).
+
+---
+
+🗣️ TONE:
+
+- Be formal, helpful, and factual.
+- Do not use slang or technical jargon unless the user does.
+- Never mention tools, APIs, or memory to the user.
+
+---
+
+🎯 OBJECTIVE:
+
+Deliver accurate, respectful answers using reliable data, retrieving new information only when required — and never breaking character.
+
+                """
                 instructions2 = """
                 You will receive a English summary. Your task is to translate it into simple, conversational Hindi, like how normal people speak in real life. Avoid using formal or pure Hindi words. Use simple and common Hindi vocabulary, and include basic English terms like "app", "video", "tool", "update", etc., if they feel natural.
 
@@ -82,7 +125,7 @@ def run_chat_ui(headline):
 
                 llm = ChatGoogleGenerativeAI(
                     model="gemini-2.0-flash",
-                    api_key=[Your API],
+                    api_key="Your_API",
                     temperature=0.5
                 )
 
@@ -101,7 +144,7 @@ def run_chat_ui(headline):
                     prompt=SystemMessage(content=instructions2)
                 )
                 execute(agent,headline)
-                data = f"What user asked: {ask}"
+                data = f"Instructions : {instructions},What user asked: {ask}"
                 summary = execute(agent,data)
 
                 self.append_chat("Agent", summary)
@@ -137,4 +180,4 @@ def run_chat_ui(headline):
     app.mainloop()
 
 if __name__ == "__main__":
-    run_chat_ui("'Janwaro ka khaana': SpiceJet passengers, angry over food quality, force ground staff to eat it, airline responds")
+    run_chat_ui("Iran Israel war live updates: Iran's Arak nuclear site hit, Israeli hospital struck as missile fire intensifies")
