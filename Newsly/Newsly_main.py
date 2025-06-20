@@ -3,13 +3,16 @@ import threading
 import queue
 import time
 from NewsChat import run_chat_ui
-from Testagent import get_ai_news
+from Testagent import get_ai_news,customized_news
+
 
 ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
 news_data = get_ai_news()
+impact_data = customized_news("x",news_data)
 new_news_queue = queue.Queue()
+impact_news_queue = queue.Queue()
 rendered_titles = set()
 loading_in_progress = False
 
@@ -27,13 +30,17 @@ def background_news_loader():
 
     # Fake new items
     more_news = get_ai_news()
+    more_impact = customized_news("x",more_news)
     for item in more_news:
         news_data.append(item)
         new_news_queue.put(item)
+    for item in more_impact:
+        impact_data.append(item)
+        impact_news_queue.put(item)
 
     loading_in_progress = False
 
-def create_news_ui(news_data, handle_chat, handle_like):
+def create_news_ui(impact_data,news_data, handle_chat, handle_like):
     app = ctk.CTk()
     app.title("Newsly-News")
     app.geometry("900x700")
@@ -43,9 +50,11 @@ def create_news_ui(news_data, handle_chat, handle_like):
 
     canvas = scroll_frame._parent_canvas
 
-    def render_news_item(news_item):
+    def render_news_item(news_item,impact_item):
         title = news_item["title"]
         bullets = news_item["Bullets"]
+        impact_title = "~Impact On You~"
+        impact_bullets = impact_item['Bullets']
 
         if title in rendered_titles:
             return
@@ -58,6 +67,13 @@ def create_news_ui(news_data, handle_chat, handle_like):
                      wraplength=800, anchor="w").pack(pady=5, padx=10)
 
         for point in bullets:
+            ctk.CTkLabel(card, text="• " + point, font=("Arial", 13),
+                         wraplength=800, anchor="w", justify="left",width=810).pack(anchor="w", padx=20)
+
+        ctk.CTkLabel(card, text=impact_title, font=("Arial", 16, "bold"),
+                     wraplength=800, anchor="w").pack(pady=5, padx=10)
+
+        for point in impact_bullets:
             ctk.CTkLabel(card, text="• " + point, font=("Arial", 13),
                          wraplength=800, anchor="w", justify="left",width=810).pack(anchor="w", padx=20)
 
@@ -77,7 +93,8 @@ def create_news_ui(news_data, handle_chat, handle_like):
     def poll_new_items():
         while not new_news_queue.empty():
             item = new_news_queue.get()
-            render_news_item(item)
+            impact_item = impact_news_queue.get()
+            render_news_item(item,impact_item)
         app.after(500, poll_new_items)
 
     def _on_mousewheel(event):
@@ -91,8 +108,9 @@ def create_news_ui(news_data, handle_chat, handle_like):
 
     _bind_mousewheel(canvas)
 
-    for item in news_data:
-        render_news_item(item)
+    for item,impact_item in zip(news_data,impact_data) :
+        render_news_item(item,impact_item)
+
 
     canvas.bind("<Configure>", check_scroll_position)
     poll_new_items()
@@ -101,4 +119,4 @@ def create_news_ui(news_data, handle_chat, handle_like):
 
 
 if __name__ == "__main__":
-    create_news_ui(news_data, handle_chat, handle_like)
+    create_news_ui(impact_data,news_data, handle_chat, handle_like)
